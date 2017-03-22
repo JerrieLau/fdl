@@ -1,0 +1,8 @@
+[package]
+name = "fdl"
+version = "0.1.0"
+authors = ["liujie <liujie@ebnew.com>"]
+
+[dependencies]
+reqwest = "0.4.0"
+regex = "0.2"
