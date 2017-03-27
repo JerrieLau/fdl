@@ -8,7 +8,7 @@ mod mods {
 
 use std::io;
 use std::io::{BufRead, BufReader};
-use std::fs::File;
+use std::fs::OpenOptions;
 use std::env;
 use std::process;
 use regex::Regex;
@@ -49,7 +49,8 @@ fn main() {
     file_path.push_str("./");
     file_path.push_str(filename.as_str());
     file_path.push_str(".flv");
-    let mut file = File::create(file_path).expect("创建文件失败！");
+    let mut file = OpenOptions::new().write(true).create(true).truncate(config.start_segment.len() < 1).open(file_path).expect("创建文件失败！");
+
     //3. 获取每个分片数据
     let mut skip = true;
     for segment in segments {
