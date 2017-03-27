@@ -31,16 +31,16 @@ impl Config {
         };
 
 
-        let start_segment = if args.len() > 3 {
+        let start_segment = if args.len() > 2 {
             args[2].clone()
         } else {
             "".to_string()
         };
 
-        let retry = if args.len() > 4 {
+        let retry = if args.len() > 3 {
             args[3].to_string().parse::<u32>().unwrap()
         } else {
-            3
+            8
         };
 
 

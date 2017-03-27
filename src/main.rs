@@ -29,9 +29,22 @@ fn main() {
     //2. 获取文件分片信息
     let mut res = reqwest::get(url.as_str()).unwrap();
     if !res.status().is_success() {
-        println!("获取下载文件分片信息出错，状态码：{}", res.status());
-        process::exit(1);
+        for i in 0..config.retry {
+            res = reqwest::get(url.as_str()).unwrap();
+            if !res.status().is_success() {
+                if i == config.retry - 1 {
+                    println!("获取下载文件分片信息出错，状态码：{}", res.status());
+                    process::exit(1);
+                } else {
+                    println!("获取下载文件分片信息出错{}次", i + 1);
+                    continue;
+                }
+            } else {
+                break;
+            }
+        }
     }
+
     let mut content = Vec::<u8>::new();
     io::copy(&mut res, &mut content).unwrap();
     let re = Regex::new(r"#\w+").unwrap();
@@ -65,20 +78,22 @@ fn main() {
         let mut segment_url = base.clone();
         segment_url.push_str(segment.as_str());
 
-        let retry = config.retry;
-        for i in 0..retry {
+        for i in 0..config.retry {
             let mut res = reqwest::get(segment_url.as_str()).unwrap();
             if !res.status().is_success() {
-                if i == retry - 1 {
+                if i == config.retry - 1 {
                     println!("下载分片({})的数据时出错，状态码：{}", segment, res.status());
                     process::exit(1);
                 } else {
+                    println!("下载分片({})出错{}次", segment, i + 1);
                     continue;
                 }
             }
             //4. 保存文件
             io::copy(&mut res, &mut file).unwrap();
             println!("文件({})的分片({})下载完成，", filename, segment);
+
+            break;
         }
     }
     //    println!("content is {}", );
