@@ -10,8 +10,15 @@ pub struct Config {
     pub retry: u32
 }
 
+impl AsRef<Config> for Config {
+    #[inline]
+    fn as_ref(&self) -> &Config {
+        self
+    }
+}
+
 impl Config {
-    pub fn new(args: &[String]) -> Result<Config, &'static str> {
+    pub fn parse(args: &[String]) -> Result<Config, &'static str> {
         if args.len() < 2 {
             return Err("请在命令行后添加要访问的URL地地址!");
         }
