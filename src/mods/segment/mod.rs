@@ -3,9 +3,11 @@ extern crate regex;
 
 use std::io;
 use regex::Regex;
-use std::io::{BufRead, BufReader};
+use std::io::{Write, BufRead, BufReader};
 use mods::config::Config;
 use std::fs::OpenOptions;
+use reqwest::header::{UserAgent, Referer};
+
 
 pub struct Segments {
     pub segments: Vec<String>
@@ -19,7 +21,11 @@ impl Segments {
         //2. 获取文件分片信息
         let mut content = Vec::<u8>::new();
         for i in 0..retry {
-            let result = reqwest::get(url.as_str());
+            let client = reqwest::Client::new().expect("client failed to construct");
+            let result = client.get(url.as_str())
+                .header(UserAgent("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0".to_string()))
+                .header(Referer("http://www.qqqq25.com/swf/HLSplayer.swf?v=1.5".to_string()))
+                .send();
             if !result.is_ok() {
                 println!("获取下载文件分片失败，重试次数{}次!", i + 1);
                 if i == retry - 1 {
@@ -82,7 +88,11 @@ impl Segments {
             segment_url.push_str(segment.as_str());
 
             for i in 0..config.retry {
-                let result = reqwest::get(segment_url.as_str());
+                let client = reqwest::Client::new().expect("client failed to construct");
+                let result = client.get(segment_url.as_str())
+                    .header(UserAgent("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0".to_string()))
+                    .header(Referer("http://www.qqqq25.com/swf/HLSplayer.swf?v=1.5".to_string()))
+                    .send();
                 if !result.is_ok() {
                     println!("下载分片({})出错，重试第{}次!", segment, i + 1);
                     if i == config.retry - 1 {
@@ -104,9 +114,18 @@ impl Segments {
                         }
                     } else {
                         //4. 保存文件
-                        io::copy(&mut res, &mut file).unwrap();
-                        println!("文件({})的分片({})下载完成!", filename, segment);
-                        break;
+                        let mut content = Vec::<u8>::new();
+                        match io::copy(&mut res, &mut content) {
+                            Ok(_) => {}
+                            Err(_) => { return Err("读取下载内容失败!"); }
+                        }
+                        match file.write(content.as_slice()) {
+                            Ok(_) => {
+                                println!("文件({})的分片({})下载完成!", filename, segment);
+                                break;
+                            }
+                            Err(_) => { return Err("分片文件保存失败!"); }
+                        }
                     }
                 }
             }
