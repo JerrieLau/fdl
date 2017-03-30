@@ -4,7 +4,7 @@ extern crate regex;
 use std::io;
 use regex::Regex;
 use std::io::{Write, BufRead, BufReader};
-use mods::config::Config;
+use utils::config::Config;
 use std::fs::OpenOptions;
 use reqwest::header::{UserAgent, Referer};
 

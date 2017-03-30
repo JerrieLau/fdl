@@ -1,15 +1,12 @@
 extern crate reqwest;
 extern crate regex;
 
-mod mods {
-    pub mod config;
-    pub mod segment;
-}
+mod utils;
 
 use std::env;
 use std::process;
-use mods::config::Config;
-use mods::segment::Segments;
+use utils::config::Config;
+use utils::segment::Segments;
 
 fn main() {
     //1.解析输入参数
