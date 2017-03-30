@@ -1,4 +1,4 @@
-extern crate reqwest;
+extern crate hyper;
 extern crate regex;
 
 use std::io;
@@ -6,7 +6,7 @@ use regex::Regex;
 use std::io::{Write, BufRead, BufReader};
 use utils::config::Config;
 use std::fs::OpenOptions;
-use reqwest::header::{UserAgent, Referer};
+use std::time::Duration;
 
 
 pub struct Segments {
@@ -18,13 +18,18 @@ impl Segments {
         let url = config.url.clone();
         let retry = config.retry;
 
+        let mut client = hyper::Client::new();
+        client.set_read_timeout(Some(Duration::new(60, 0)));
+
         //2. 获取文件分片信息
         let mut content = Vec::<u8>::new();
         for i in 0..retry {
-            let client = reqwest::Client::new().expect("client failed to construct");
+            let mut headers = hyper::header::Headers::new();
+            headers.append_raw("User-Agent", "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0".as_bytes().to_owned());
+            headers.append_raw("Referer", "http://www.qqqq25.com/swf/HLSplayer.swf?v=1.5".as_bytes().to_owned());
+
             let result = client.get(url.as_str())
-                .header(UserAgent("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0".to_string()))
-                .header(Referer("http://www.qqqq25.com/swf/HLSplayer.swf?v=1.5".to_string()))
+                .headers(headers)
                 .send();
             if !result.is_ok() {
                 println!("获取下载文件分片失败，重试次数{}次!", i + 1);
@@ -35,7 +40,7 @@ impl Segments {
                 }
             } else {
                 let mut res = result.unwrap();
-                if !res.status().is_success() {
+                if !res.status.is_success() {
                     println!("获取下载文件分片失败，重试第{}次!", i + 1);
                     if i == retry - 1 {
                         println!("获取下载文件分片数据时重试{}次仍失败，退出!", retry);
@@ -49,7 +54,6 @@ impl Segments {
                 break;
             }
         }
-
 
         let re = Regex::new(r"#\w+").unwrap();
         let reader = BufReader::new(content.as_slice());
@@ -67,6 +71,9 @@ impl Segments {
         let mut skip = true;
         let base = config.base.clone();
         let filename = config.filename.clone();
+
+        let mut client = hyper::Client::new();
+        client.set_read_timeout(Some(Duration::new(60, 0)));
 
         // 创建Or打开文件
         let mut file_path = String::new();
@@ -88,10 +95,12 @@ impl Segments {
             segment_url.push_str(segment.as_str());
 
             for i in 0..config.retry {
-                let client = reqwest::Client::new().expect("client failed to construct");
+                let mut headers = hyper::header::Headers::new();
+                headers.append_raw("User-Agent", "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0".as_bytes().to_owned());
+                headers.append_raw("Referer", "http://www.qqqq25.com/swf/HLSplayer.swf?v=1.5".as_bytes().to_owned());
+
                 let result = client.get(segment_url.as_str())
-                    .header(UserAgent("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0".to_string()))
-                    .header(Referer("http://www.qqqq25.com/swf/HLSplayer.swf?v=1.5".to_string()))
+                    .headers(headers)
                     .send();
                 if !result.is_ok() {
                     println!("下载分片({})出错，重试第{}次!", segment, i + 1);
@@ -104,10 +113,10 @@ impl Segments {
                 } else {
                     let mut res = result.unwrap();
                     //http status is fail
-                    if !res.status().is_success() {
+                    if !res.status.is_success() {
                         println!("下载分片({})出错，重试第{}次!", segment, i + 1);
                         if i == config.retry - 1 {
-                            println!("下载分片({})的数据时重试{}次仍失败，状态码:{}，退出!", segment, config.retry, res.status());
+                            println!("下载分片({})的数据时重试{}次仍失败，状态码:{}，退出!", segment, config.retry, res.status);
                             return Err("下载分片失败!");
                         } else {
                             continue;

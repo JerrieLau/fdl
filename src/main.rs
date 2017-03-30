@@ -1,4 +1,3 @@
-extern crate reqwest;
 extern crate regex;
 
 mod utils;
